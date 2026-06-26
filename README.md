@@ -2,7 +2,8 @@
 
 پنل مدیریت حرفه‌ای ربات تلگرام با قابلیت آپلود فایل و مدیریت کامل
 
-#عکس های مربوط به پروژه  
+# عکس های مربوط به پروژه 
+
 <img width="1280" height="675" alt="1" src="https://github.com/user-attachments/assets/4853212f-1232-490c-bfa6-cd639f5532e8" />
 
 <img width="1280" height="674" alt="2" src="https://github.com/user-attachments/assets/8b318af5-1769-4b0c-8e76-71857b47292b" />
