@@ -33,6 +33,8 @@
 - Python 3.8+
 - pip
 
+### نحوه اجرا : بعد از اکسترکت پوشه , فایل app.py رو اجرا کنید 
+
 ### نصب
 ```bash
 pip install -r requirements.txt
