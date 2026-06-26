@@ -33,6 +33,4 @@
 ```bash
 pip install -r requirements.txt
 python app.py
-
-
-#عکس های مربوط به پروژه  
+  
