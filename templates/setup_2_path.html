@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📁 مسیر ذخیره‌سازی</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', Tahoma, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .setup-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 50px 40px;
+            width: 600px;
+            max-width: 95%;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5),
+                        inset 0 1px 0 rgba(255,255,255,0.1);
+            animation: slideIn 0.6s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(50px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .icon-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .icon-circle {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            box-shadow: 0 15px 30px rgba(240, 147, 251, 0.4);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 15px 30px rgba(240, 147, 251, 0.4); }
+            50% { box-shadow: 0 15px 50px rgba(240, 147, 251, 0.8); }
+        }
+        
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        
+        .input-group i {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #f093fb;
+            font-size: 20px;
+            transition: 0.3s;
+            pointer-events: none;
+        }
+        
+        input {
+            width: 100%;
+            padding: 18px 50px 18px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            font-family: 'Vazirmatn', Tahoma;
+            transition: all 0.4s;
+            outline: none;
+        }
+        
+        input:focus {
+            border-color: #f093fb;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 30px rgba(240, 147, 251, 0.3);
+        }
+        
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Vazirmatn', Tahoma;
+            cursor: pointer;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(240, 147, 251, 0.5);
+        }
+        
+        .btn-submit::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+            transform: scale(0);
+            transition: transform 0.6s;
+            border-radius: 50%;
+        }
+        
+        .btn-submit:hover::after {
+            transform: scale(1);
+        }
+        
+        .note {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: #ffc107;
+            font-size: 14px;
+            margin-bottom: 25px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .note code {
+            background: rgba(0,0,0,0.3);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .step-dot.active {
+            background: #f093fb;
+            box-shadow: 0 0 15px #f093fb;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="setup-container">
+        <div class="icon-container">
+            <div class="icon-circle">📁</div>
+        </div>
+        <h2>مسیر ذخیره‌سازی فایل‌ها</h2>
+        <p class="subtitle">یک مسیر کامل برای ذخیره فایل‌های آپلودی وارد کنید</p>
+        
+        <form method="POST" id="pathForm">
+            <div class="note">
+                💡 <strong>مسیر کامل</strong> را وارد کنید<br>
+                <small>مثال: <code>C:/Users/AliReza_313/bot-files</code></small>
+            </div>
+            
+            <div class="input-group">
+                <i>📂</i>
+                <input type="text" 
+                       name="upload_path" 
+                       id="uploadPath" 
+                       placeholder="C:/Users/AliReza_313/bot-files" 
+                       required 
+                       autocomplete="off">
+            </div>
+            
+            <button type="submit" class="btn-submit">
+                <span>🚀 راه‌اندازی پنل</span>
+            </button>
+        </form>
+        
+        <div class="step-indicator">
+            <span class="step-dot"></span>
+            <span class="step-dot active"></span>
+        </div>
+    </div>
+
+    <script>
+        // ذرات پس‌زمینه
+        const particlesContainer = document.getElementById('particles');
+        for(let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.width = Math.random() * 10 + 5 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.animationDuration = Math.random() * 10 + 10 + 's';
+            particle.style.animationDelay = Math.random() * 10 + 's';
+            particlesContainer.appendChild(particle);
+        }
+        
+        // فوکوس روی اینپوت
+        document.getElementById('uploadPath').focus();
+        
+        // اعتبارسنجی قبل از ارسال
+        document.getElementById('pathForm').addEventListener('submit', function(e) {
+            const path = document.getElementById('uploadPath').value.trim();
+            
+            if (!path) {
+                e.preventDefault();
+                alert('❌ لطفاً یک مسیر معتبر وارد کنید');
+                return;
+            }
+            
+            if (path.includes('\\\\')) {
+                e.preventDefault();
+                alert('❌ لطفاً از / به جای \\\\ استفاده کنید');
+                return;
+            }
+            
+            if (!path.includes(':')) {
+                e.preventDefault();
+                alert('❌ لطفاً مسیر کامل را وارد کنید (مثال: C:/Users/.../folder)');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
