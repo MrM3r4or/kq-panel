@@ -1,4 +1,4 @@
-# Wallet 
+# Wallet For Donations
 ``` 
 ETH : 0x2f999c341e2719ff6D04B1564CD8c34e5F24b3Db
 
