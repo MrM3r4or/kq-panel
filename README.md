@@ -25,7 +25,7 @@
 - 📊 لاگ لحظه‌ای
 
 ## 🛠️ نصب و راه‌اندازی
-[[ 📦 **لینک دانلود .zip** ]](https://github.com/user-attachments/files/29396966/kq-panel.zip)
+[📦 **لینک دانلود .zip**](https://github.com/user-attachments/files/29406882/kq-panel.zip)
 
 ### پیش‌نیازها
 - Python 3.8+
