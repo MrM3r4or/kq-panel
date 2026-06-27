@@ -3,61 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>kQ Panel | مدیریت ربات تلگرام</title>
+    <title>kQ Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- moment + timezone -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.45/moment-timezone-with-data.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="light-mode">
     <div class="app-container">
+        <!-- ========== SIDEBAR ========== -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
+            <div class="sidebar-brand" id="brandClickable" style="cursor:pointer;" title="مدیریت بات‌ها">
                 <div class="brand-icon">🤖</div>
                 <div class="brand-info">
                     <h3>kQ Panel</h3>
-                    <span>مدیریت حرفه‌ای</span>
+                    <span id="currentBotType">در حال بارگذاری...</span>
                 </div>
             </div>
-            
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-page="status">
-                    <i class="fas fa-chart-line"></i><span>وضعیت ربات</span><span class="badge pulse"></span>
-                </a>
-                <a href="#" class="nav-item" data-page="messages">
-                    <i class="fas fa-comment-dots"></i><span>تنظیمات پیام‌ها</span>
-                </a>
-                <a href="#" class="nav-item" data-page="files">
-                    <i class="fas fa-folder-open"></i><span>مدیریت فایل‌ها</span>
-                </a>
-                <a href="#" class="nav-item" data-page="users">
-                    <i class="fas fa-users"></i><span>کاربران</span>
-                </a>
-                <a href="#" class="nav-item" data-page="buttons">
-                    <i class="fas fa-th-large"></i><span>مدیریت دکمه‌ها</span>
-                </a>
-                <a href="#" class="nav-item" data-page="force_join">
-                    <i class="fas fa-link"></i><span>جوین اجباری</span>
-                </a>
-                <a href="#" class="nav-item" data-page="bans">
-                    <i class="fas fa-ban"></i><span>مدیریت بن</span>
-                </a>
-                <a href="#" class="nav-item" data-page="settings">
-                    <i class="fas fa-cog"></i><span>تنظیمات</span>
-                </a>
+
+            <nav class="sidebar-nav" id="sidebarNav">
+                <!-- توسط JS پر می‌شود -->
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="copyright-box">
                     <div class="copyright-icon">⚡</div>
                     <div class="copyright-text">
                         <span>© 2026 - 2027</span>
                         <span>Dev by <strong>KhandaQh</strong></span>
-                        <span class="version-badge">Version 1 (Beta)</span>
+                        <span class="version-badge">Version 1.5</span>
                     </div>
                 </div>
             </div>
         </aside>
-        
+
+        <!-- ========== MAIN CONTENT ========== -->
         <main class="main-content">
             <header class="header">
                 <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
@@ -70,7 +52,58 @@
             <div class="content-area" id="dynamicContent"></div>
         </main>
     </div>
+
+    <!-- ========== OVERLAY مدیریت بات‌ها ========== -->
+    <div class="overlay" id="botsOverlay" style="display:none;">
+        <div class="overlay-content">
+            <div class="overlay-header">
+                <h3>🤖 بات‌های شما</h3>
+                <button class="overlay-close" onclick="closeBotsOverlay()">×</button>
+            </div>
+            <div class="bot-list" id="botList"></div>
+            <button class="btn btn-success" onclick="openAddBotModal()" style="width:100%; margin-top:15px;">➕ افزودن ربات</button>
+        </div>
+    </div>
+
+    <!-- ========== MODAL افزودن ربات جدید ========== -->
+<div class="modal-overlay" id="addBotModal" style="display:none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>➕ افزودن ربات جدید</h3>
+            <button class="modal-close" onclick="closeAddBotModal()">×</button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">توکن ربات</label>
+            <input class="form-control" id="newBotToken" placeholder="توکن را از BotFather دریافت کنید">
+        </div>
+        <div class="form-group">
+            <label class="form-label">نوع ربات</label>
+            <select class="form-control" id="newBotType" onchange="toggleAiFields()">
+                <option value="uploader">📁 آپلودر</option>
+                <option value="assistant">🧠 دستیار هوش مصنوعی</option>
+            </select>
+        </div>
+        <!-- فیلدهای مخفی برای دستیار -->
+        <div id="aiFields" style="display:none;">
+            <div class="form-group">
+                <label class="form-label">توکن هوش مصنوعی</label>
+                <input class="form-control" id="newAiToken" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">مدل هوش مصنوعی</label>
+                <input class="form-control" id="newAiModel" placeholder="مثال: openai/gpt-4o">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-success" onclick="addNewBot()">💾 ذخیره</button>
+            <button class="btn btn-danger" onclick="closeAddBotModal()">لغو</button>
+        </div>
+    </div>
+</div>
+
+    <!-- ========== TOAST ========== -->
     <div class="toast-container" id="toastContainer"></div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

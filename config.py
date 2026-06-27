@@ -1,41 +1,51 @@
 import json
 import os
 
-CONFIG_FILE = 'config.json'
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
 
 class Config:
-    BOT_TOKEN = None
-    UPLOAD_FOLDER = 'uploads'
+    bots = []          # لیست دیکشنری‌های هر بات: {id, token, type, folder}
+    current_bot_id = 1 # آیدی بات فعال
     BASE_URL = "http://127.0.0.1:5000"
-    
+
+    @classmethod
+    def load(cls):
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            cls.bots = data.get('bots', [])
+            cls.current_bot_id = data.get('current', 1)
+            cls.BASE_URL = data.get('base_url', cls.BASE_URL)
+            return True
+        return False
+
     @classmethod
     def save(cls):
-        """ذخیره تنظیمات در فایل JSON"""
         data = {
-            'bot_token': cls.BOT_TOKEN,
-            'upload_folder': cls.UPLOAD_FOLDER,
+            'bots': cls.bots,
+            'current': cls.current_bot_id,
             'base_url': cls.BASE_URL
         }
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-        print("💾 تنظیمات ذخیره شد")
-    
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
     @classmethod
-    def load(cls):
-        """بارگذاری تنظیمات از فایل JSON"""
-        if os.path.exists(CONFIG_FILE):
-            try:
-                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                cls.BOT_TOKEN = data.get('bot_token')
-                cls.UPLOAD_FOLDER = data.get('upload_folder', 'uploads')
-                cls.BASE_URL = data.get('base_url', 'http://127.0.0.1:5000')
-                print("📂 تنظیمات قبلی بارگذاری شد")
-                return True
-            except:
-                print("⚠️ خطا در بارگذاری تنظیمات")
-        return False
-    
+    def get_bot(cls, bot_id):
+        for bot in cls.bots:
+            if bot['id'] == bot_id:
+                return bot
+        return None
+
     @classmethod
-    def is_configured(cls):
-        return cls.BOT_TOKEN is not None
+    def add_bot(cls, token, bot_type):
+        new_id = max([b['id'] for b in cls.bots] + [0]) + 1
+        folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'uploads/bot_{new_id}')
+        bot = {
+            'id': new_id,
+            'token': token,
+            'type': bot_type,
+            'folder': folder
+        }
+        cls.bots.append(bot)
+        cls.save()
+        return bot

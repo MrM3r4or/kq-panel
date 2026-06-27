@@ -1,21 +1,30 @@
+# تنظیمات حساس (توکن ربات، توکن AI)
 config.json
-*.db
-*.log
-__pycache__/
-*.pyc
-*.pyo
-.env
+
+# پایگاه داده محلی
+bot_data.db
 
 
 uploads/
+database/
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+
+*.log
+
+
+.env
+
 venv/
 env/
 .venv/
 
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
 
 .vscode/
 .idea/
+
+.DS_Store
+Thumbs.db

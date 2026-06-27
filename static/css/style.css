@@ -700,3 +700,72 @@ table tbody tr:hover {
         grid-template-columns: 1fr;
     }
 }
+/* ============================================= */
+/* تمام محتوای CSS قبلی شما (از :root تا Responsive) */
+/* ============================================= */
+
+/* ========== اضافات نسخه ۱.۵ ========== */
+
+/* Overlay مدیریت بات‌ها */
+.overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000; animation: fadeIn 0.3s ease;
+}
+.overlay-content {
+    background: var(--bg-secondary); border-radius: var(--radius);
+    padding: 30px; width: 500px; max-width: 90%; max-height: 80vh;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+    animation: slideUp 0.4s ease;
+}
+.overlay-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+.overlay-header h3 { margin: 0; font-size: 1.3em; }
+.overlay-close {
+    background: transparent; border: none; font-size: 24px;
+    cursor: pointer; color: var(--text-primary); transition: 0.3s;
+}
+.overlay-close:hover { color: var(--danger); transform: rotate(90deg); }
+
+/* لیست بات‌ها */
+.bot-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
+.bot-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 15px; border-radius: var(--radius);
+    background: var(--bg-primary); cursor: pointer;
+    border: 1px solid transparent; transition: var(--transition);
+}
+.bot-item:hover { border-color: var(--primary); background: var(--bg-secondary); }
+.bot-item.active { border-color: var(--primary); background: rgba(99,102,241,0.1); }
+.bot-token { font-family: monospace; opacity: 0.7; }
+.bot-type-badge {
+    background: var(--primary); color: white;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+
+/* کارت‌های غیرفعال در انتخاب نوع */
+.type-card.disabled {
+    opacity: 0.5; cursor: not-allowed; pointer-events: none;
+}
+.type-card.disabled .type-name::after {
+    content: " (به‌زودی)"; font-size: 0.7em; color: var(--warning);
+}
+
+/* استایل کاغذی دستورات (اختیاری) */
+.prompt-paper {
+    background: #fdf6e3; color: #5b4636;
+    padding: 20px; border-radius: var(--radius);
+    border: 1px solid #e0d5c1;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+body.dark-mode .prompt-paper {
+    background: #2b2520; color: #d4c3b3;
+    border-color: #5b4b3a;
+}
+
+/* ورودی‌های DND */
+#dndTimerSection, #dndDateSection { margin-top: 10px; }

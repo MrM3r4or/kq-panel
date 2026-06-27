@@ -1,210 +1,251 @@
-import logging, sys, os, asyncio, threading, secrets
+import logging
+import sys
+import os
+import asyncio
+import threading
+import secrets
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
-import config, database
+import config
+import database
 
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
-# لاگ‌های ذخیره‌شونده
+# لاگ‌های عمومی (برای نمایش در پنل)
 log_messages = []
+
 def add_log(msg):
     ts = datetime.now().strftime('%H:%M:%S')
     log_messages.append(f"[{ts}] {msg}")
     print(log_messages[-1])
-    if len(log_messages) > 500: log_messages.pop(0)
+    if len(log_messages) > 500:
+        log_messages.pop(0)
 
-# متغیرهای گلوبال
-application = None
-stop_event = threading.Event()
-bot_username = None
+# دیکشنری برای نگهداری نمونه‌های در حال اجرای ربات‌ها
+active_bots = {}
 
-# توابع دیتابیس
-def is_banned(uid):
-    c = database.get_db().execute('SELECT 1 FROM banned_users WHERE user_id=?',(uid,)).fetchone(); c.close(); return bool(c)
+# ---------- توابع کمکی ----------
+def get_bot_config(bot_id):
+    return config.get_bot(bot_id)
 
-def save_user(u):
-    db = database.get_db(); db.execute('INSERT OR IGNORE INTO users (user_id,first_name,last_name,username) VALUES (?,?,?,?)',(u.id,u.first_name,u.last_name,u.username)); db.commit(); db.close()
+def get_db_for(bot_id):
+    return database.get_db()
 
-def get_force_channels():
-    c = database.get_db().execute('SELECT * FROM force_join WHERE enabled=1').fetchall(); c.close(); return c
-
-def get_keyboard_buttons():
-    c = database.get_db().execute("SELECT * FROM custom_buttons WHERE menu_type='keyboard' ORDER BY priority").fetchall(); c.close(); return c
-
-def get_custom_msg(cmd):
-    c = database.get_db().execute('SELECT * FROM custom_messages WHERE command=?',(cmd,)).fetchone(); c.close(); return c
-
-def save_link(code, fid, name):
-    db = database.get_db(); db.execute('INSERT INTO file_links (short_code,file_id,file_name) VALUES (?,?,?)',(code,fid,name)); db.commit(); db.close()
-
-def get_file_by_code(code):
-    c = database.get_db().execute('SELECT * FROM file_links WHERE short_code=?',(code,)).fetchone(); c.close(); return c
-
-# Handlerها
-async def start(update, context):
+# ---------- Handler های پایه (با bot_id) ----------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, bot_id: int):
     user = update.effective_user
     args = context.args
+
+    # ابتدا deep link
     if args:
-        code = args[0]
-        add_log(f"🔗 Deep link code {code}")
-        file = get_file_by_code(code)
+        short_code = args[0]
+        db = database.get_db()
+        file = db.execute('SELECT * FROM file_links WHERE short_code=? AND bot_id=?', (short_code, bot_id)).fetchone()
         if file:
             try:
                 await context.bot.send_document(chat_id=user.id, document=file['file_id'], caption=f"📄 {file['file_name']}")
-            except:
-                await update.message.reply_text("❌ فایل حذف شده است.")
+            except Exception as e:
+                await update.message.reply_text("❌ فایل در دسترس نیست.")
         else:
             await update.message.reply_text("❌ لینک نامعتبر.")
         return
 
-    add_log(f"👤 /start {user.id}")
-    if is_banned(user.id): await update.message.reply_text("⛔ بن شدی"); return
-    save_user(user)
-    chs = get_force_channels()
-    if chs:
-        kb = []
-        for ch in chs:
-            kb.append([InlineKeyboardButton(f"📢 {ch['channel_name']}", url=f"https://t.me/{ch['channel_username']}")])
-        kb.append([InlineKeyboardButton("✅ تایید", callback_data="check_join")])
-        await update.message.reply_text(chs[0]['custom_message'] or "⚠️ عضو شوید:", reply_markup=InlineKeyboardMarkup(kb))
-        return
-    # بدون جوین
-    cm = get_custom_msg("/start")
-    if cm:
-        await update.message.reply_text(cm['response_text'])
-    else:
-        await update.message.reply_text("🎉 خوش آمدید! فایل ارسال کنید.", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("📁 ارسال فایل")]], resize_keyboard=True))
-    await show_main_menu(update)
-
-async def check_join(update, context):
-    q = update.callback_query; await q.answer(); uid = q.from_user.id
-    chs = get_force_channels(); bad = []
-    for ch in chs:
-        try:
-            m = await context.bot.get_chat_member(f"@{ch['channel_username']}", uid)
-            if m.status in ['left','kicked']: bad.append(ch)
-        except: bad.append(ch)
-    if bad:
-        kb = [[InlineKeyboardButton(f"📢 {ch['channel_name']}", url=f"https://t.me/{ch['channel_username']}")] for ch in chs]
-        kb.append([InlineKeyboardButton("🔄 بررسی", callback_data="check_join")])
-        await q.edit_message_text("❌ عضو نیستی", reply_markup=InlineKeyboardMarkup(kb))
-    else:
-        await q.edit_message_text("✅ تایید شد")
-        cm = get_custom_msg("/start")
-        txt = cm['response_text'] if cm else "🎉 حالا فایل بفرست"
-        await context.bot.send_message(q.message.chat_id, txt)
-        await show_main_menu_msg(context.bot, q.message.chat_id)
-
-async def show_main_menu(update):
-    btns = get_keyboard_buttons()
-    kb = []
-    row = []
-    for i,b in enumerate(btns):
-        row.append(KeyboardButton(b['button_text']))
-        if len(row)==2 or i==len(btns)-1: kb.append(row); row=[]
-    if kb:
-        await update.message.reply_text("⬇️ منو", reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True))
-    else:
-        await update.message.reply_text("⬇️ فایل بفرست", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("📁 ارسال فایل")]], resize_keyboard=True))
-
-async def show_main_menu_msg(bot, cid):
-    btns = get_keyboard_buttons()
-    kb = []
-    row = []
-    for i,b in enumerate(btns):
-        row.append(KeyboardButton(b['button_text']))
-        if len(row)==2 or i==len(btns)-1: kb.append(row); row=[]
-    await bot.send_message(cid, "⬇️ منو", reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True) if kb else None)
-
-async def handle_all(update, context):
-    u = update.effective_user; m = update.message
-    if not m: return
-    if is_banned(u.id): await m.reply_text("⛔ بن"); return
-    save_user(u)
-    file = None; name = None; typ = None
-    if m.document: file=m.document; name=file.file_name or f"doc_{file.file_unique_id}"; typ="سند"
-    elif m.video: file=m.video; name=f"vid_{file.file_unique_id}.mp4"; typ="ویدیو"
-    elif m.audio: file=m.audio; name=file.file_name or f"aud_{file.file_unique_id}.mp3"; typ="صوت"
-    elif m.photo: file=m.photo[-1]; name=f"pic_{file.file_unique_id}.jpg"; typ="تصویر"
-    elif m.voice: file=m.voice; name=f"voice_{file.file_unique_id}.ogg"; typ="ویس"
-    else:
-        txt = m.text
-        if txt == "📁 ارسال فایل":
-            await m.reply_text("📁 فایل را ارسال کنید")
-        else:
-            cm = get_custom_msg(txt)
-            if cm: await m.reply_text(cm['response_text'])
-            else: await m.reply_text("📁 فایل ارسال کن")
+    # بررسی بن
+    if database.get_db().execute('SELECT 1 FROM banned_users WHERE user_id=? AND bot_id=?', (user.id, bot_id)).fetchone():
+        await update.message.reply_text("⛔ شما بن شده‌اید.")
         return
 
-    add_log(f"📁 {typ}: {name}")
-    try:
-        s = await m.reply_text("⏳ ...")
-        fobj = await context.bot.get_file(file.file_id)
-        os.makedirs(config.Config.UPLOAD_FOLDER, exist_ok=True)
-        fpath = os.path.join(config.Config.UPLOAD_FOLDER, name)
-        await fobj.download_to_drive(fpath)
-        db = database.get_db()
-        db.execute('INSERT INTO files (file_id,file_name,file_type,message_id,chat_id) VALUES (?,?,?,?,?)',
-                   (file.file_id, name, typ, m.message_id, u.id))
-        db.commit(); db.close()
-        code = secrets.token_hex(4)
-        save_link(code, file.file_id, name)
-        global bot_username
-        if not bot_username:
-            me = await context.bot.get_me(); bot_username = me.username
-        link = f"https://t.me/{bot_username}?start={code}"
-        await s.edit_text(
-            f"✅ ذخیره شد\n📄 `{name}`\n🔗 `{link}`",
-            parse_mode='Markdown',
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 فایل", url=link)]])
+    # ذخیره کاربر
+    database.get_db().execute('INSERT OR IGNORE INTO users (user_id, first_name, last_name, username, bot_id) VALUES (?,?,?,?,?)',
+                              (user.id, user.first_name, user.last_name, user.username, bot_id))
+    database.get_db().commit()
+
+    # جوین اجباری
+    channels = database.get_db().execute('SELECT * FROM force_join WHERE bot_id=? AND enabled=1', (bot_id,)).fetchall()
+    if channels:
+        keyboard = []
+        for ch in channels:
+            keyboard.append([InlineKeyboardButton(f"📢 {ch['channel_name']}", url=f"https://t.me/{ch['channel_username']}")])
+        keyboard.append([InlineKeyboardButton("✅ تایید عضویت", callback_data=f"check_join_{bot_id}")])
+        await update.message.reply_text(
+            channels[0]['custom_message'] or "⚠️ لطفاً در کانال‌های زیر عضو شوید:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
-        add_log(f"✅ {name} -> {code}")
-    except Exception as e:
-        add_log(f"❌ {e}")
-        await m.reply_text(f"❌ {str(e)[:200]}")
+        return
 
-async def err(update, context):
-    add_log(f"❌ {context.error}")
+    # پیام خوش‌آمدگویی و منو
+    custom = database.get_db().execute('SELECT response_text FROM custom_messages WHERE bot_id=? AND command="/start"', (bot_id,)).fetchone()
+    if custom:
+        await update.message.reply_text(custom['response_text'])
+    else:
+        bot_type = get_bot_config(bot_id)['type']
+        if bot_type == 'uploader':
+            await update.message.reply_text("🎉 خوش آمدید! فایل ارسال کنید.",
+                                            reply_markup=ReplyKeyboardMarkup([[KeyboardButton("📁 ارسال فایل")]], resize_keyboard=True))
+        elif bot_type == 'anonymous':
+            await update.message.reply_text("👻 پیام ناشناس:\nپیام خود را بنویسید تا به ادمین ارسال شود.")
+        elif bot_type == 'buy_sell':
+            await update.message.reply_text("🛒 به ربات خرید و فروش خوش آمدید.")
+    # نمایش دکمه‌های سفارشی
+    btns = database.get_db().execute('SELECT * FROM custom_buttons WHERE bot_id=? AND menu_type="keyboard"', (bot_id,)).fetchall()
+    if btns:
+        kb = []
+        row = []
+        for i, btn in enumerate(btns):
+            row.append(KeyboardButton(btn['button_text']))
+            if len(row) == 2 or i == len(btns) - 1:
+                kb.append(row)
+                row = []
+        await update.message.reply_text("⬇️ منو:", reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True))
 
-def run_bot():
-    global application, stop_event, bot_username
-    add_log("🚀 راه‌اندازی...")
+async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE, bot_id: int):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    channels = database.get_db().execute('SELECT * FROM force_join WHERE bot_id=? AND enabled=1', (bot_id,)).fetchall()
+    not_joined = []
+    for ch in channels:
+        try:
+            member = await context.bot.get_chat_member(f"@{ch['channel_username']}", user_id)
+            if member.status in ['left', 'kicked', 'restricted']:
+                not_joined.append(ch)
+        except:
+            not_joined.append(ch)
+    if not_joined:
+        keyboard = []
+        for ch in channels:
+            keyboard.append([InlineKeyboardButton(f"📢 {ch['channel_name']}", url=f"https://t.me/{ch['channel_username']}")])
+        keyboard.append([InlineKeyboardButton("🔄 بررسی مجدد", callback_data=f"check_join_{bot_id}")])
+        await query.edit_message_text("❌ هنوز عضو همه کانال‌ها نیستید.", reply_markup=InlineKeyboardMarkup(keyboard))
+    else:
+        await query.edit_message_text("✅ تأیید شد! اکنون می‌توانید از ربات استفاده کنید.")
+        # بعد از تأیید جوین، دوباره استارت کن (بدون deep link)
+        await start(update, context, bot_id=bot_id)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE, bot_id: int):
+    msg = update.message
+    user = update.effective_user
+    if not msg:
+        return
+
+    # بررسی بن
+    if database.get_db().execute('SELECT 1 FROM banned_users WHERE user_id=? AND bot_id=?', (user.id, bot_id)).fetchone():
+        await msg.reply_text("⛔ شما بن شده‌اید.")
+        return
+
+    # ذخیره کاربر
+    database.get_db().execute('INSERT OR IGNORE INTO users (user_id, first_name, last_name, username, bot_id) VALUES (?,?,?,?,?)',
+                              (user.id, user.first_name, user.last_name, user.username, bot_id))
+    database.get_db().commit()
+
+    bot_config = get_bot_config(bot_id)
+    bot_type = bot_config['type'] if bot_config else 'uploader'
+
+    # پردازش فایل (برای آپلودر)
+    if bot_type == 'uploader':
+        file = msg.document or msg.video or msg.audio or (msg.photo[-1] if msg.photo else None) or msg.voice
+        if file:
+            name = file.file_name if hasattr(file, 'file_name') and file.file_name else f"file_{file.file_unique_id}"
+            typ = 'document' if msg.document else 'video' if msg.video else 'audio' if msg.audio else 'photo' if msg.photo else 'voice'
+            try:
+                fobj = await context.bot.get_file(file.file_id)
+                folder = bot_config['folder']
+                os.makedirs(folder, exist_ok=True)
+                path = os.path.join(folder, name)
+                await fobj.download_to_drive(path)
+                code = secrets.token_hex(4)
+                db = database.get_db()
+                db.execute('INSERT INTO files (bot_id, file_id, file_name, file_type) VALUES (?,?,?,?)',
+                           (bot_id, file.file_id, name, typ))
+                db.execute('INSERT INTO file_links (bot_id, short_code, file_id, file_name) VALUES (?,?,?,?)',
+                           (bot_id, code, file.file_id, name))
+                db.commit()
+                me = await context.bot.get_me()
+                link = f"https://t.me/{me.username}?start={code}"
+                await msg.reply_text(f"✅ ذخیره شد!\n🔗 {link}")
+            except Exception as e:
+                await msg.reply_text(f"❌ خطا: {e}")
+            return
+
+    # پردازش پیام متنی
+    if msg.text:
+        # بررسی دکمه‌های منو
+        if msg.text == "📁 ارسال فایل" and bot_type == 'uploader':
+            await msg.reply_text("📁 فایل خود را ارسال کنید.")
+            return
+
+        # دستورات سفارشی
+        custom = database.get_db().execute('SELECT response_text FROM custom_messages WHERE bot_id=? AND command=?',
+                                           (bot_id, msg.text)).fetchone()
+        if custom:
+            await msg.reply_text(custom['response_text'])
+        else:
+            if bot_type == 'anonymous':
+                # ذخیره پیام ناشناس
+                database.get_db().execute('INSERT INTO anon_messages (bot_id, owner_chat_id, sender_chat_id, message_text) VALUES (?,?,?,?)',
+                                          (bot_id, 0, user.id, msg.text))  # owner باید از تنظیمات خوانده شود
+                database.get_db().commit()
+                await msg.reply_text("✅ پیام شما ناشناس ارسال شد.")
+            else:
+                await msg.reply_text("📁 لطفاً فایل ارسال کنید.")
+    else:
+        await msg.reply_text("📁 فقط فایل پشتیبانی می‌شود.")
+
+# ---------- اجرا و توقف ----------
+def run_bot(bot_id: int):
+    """اجرای ربات با bot_id مشخص"""
+    bot_config = get_bot_config(bot_id)
+    if not bot_config:
+        add_log(f"❌ بات با آیدی {bot_id} یافت نشد.")
+        return
+
+    token = bot_config['token']
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    stop_event.clear()
 
-    async def start_app():
-        global application, bot_username
-        app = Application.builder().token(config.Config.BOT_TOKEN).build()
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CallbackQueryHandler(check_join, pattern="^check_join$"))
-        app.add_handler(MessageHandler(filters.ALL, handle_all))
-        app.add_error_handler(err)
-        application = app
-        me = await app.bot.get_me(); bot_username = me.username
-        add_log(f"✅ @{bot_username} آماده")
-        await app.initialize(); await app.start()
-        await app.updater.start_polling(drop_pending_updates=True)
-        while not stop_event.is_set():
+    async def main():
+        app = Application.builder().token(token).build()
+        # هندلرها را با bot_id پارشیال می‌کنیم
+        from functools import partial
+        app.add_handler(CommandHandler("start", lambda u, c: start(u, c, bot_id=bot_id)))
+        app.add_handler(CallbackQueryHandler(lambda u, c: check_join(u, c, bot_id=bot_id), pattern=f"^check_join_{bot_id}$"))
+        app.add_handler(MessageHandler(filters.ALL, lambda u, c: handle_message(u, c, bot_id=bot_id)))
+
+        add_log(f"✅ ربات {bot_id} شروع به کار کرد.")
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling()
+        # حلقه نگه‌دارنده (تا زمانی که متوقف نشده)
+        while bot_id in active_bots:
             await asyncio.sleep(1)
-        add_log("🛑 توقف")
-        await app.updater.stop(); await app.stop(); await app.shutdown()
-        application = None
+        add_log(f"🛑 ربات {bot_id} در حال توقف...")
+        await app.updater.stop()
+        await app.stop()
+        await app.shutdown()
 
     try:
-        loop.run_until_complete(start_app())
+        loop.run_until_complete(main())
     except Exception as e:
-        add_log(f"💀 {e}")
+        add_log(f"💀 خطا در ربات {bot_id}: {e}")
     finally:
         loop.close()
-        add_log("⏹️ ربات متوقف")
+        active_bots.pop(bot_id, None)
 
-def stop_bot():
-    if application:
-        add_log("سیگنال توقف")
-        stop_event.set()
+def start_bot(bot_id: int):
+    """شروع ربات در یک ترد جدا"""
+    if bot_id in active_bots:
+        add_log(f"⚠️ ربات {bot_id} قبلاً در حال اجراست.")
+        return
+    active_bots[bot_id] = True
+    t = threading.Thread(target=run_bot, args=(bot_id,), daemon=True)
+    t.start()
+
+def stop_bot(bot_id: int):
+    """توقف ربات"""
+    if bot_id in active_bots:
+        add_log(f"🛑 درخواست توقف ربات {bot_id}")
+        active_bots.pop(bot_id, None)  # باعث خروج از حلقه می‌شود
         return True
     return False
