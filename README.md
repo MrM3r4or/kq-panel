@@ -1,8 +1,11 @@
-# Wallet For Donations
+# Support Via Crypto
 ``` 
 ETH : 0x2f999c341e2719ff6D04B1564CD8c34e5F24b3Db
 
 BTC : bc1qmmqdaua4z5hqmer22ec2rvm7nmj2hqm0lafr27
+
+TRX :
+TJ6upyswMxPNCeFgctiQjhLsyuGyxETug8
 ```
 
 # Tel : @kq_panel
