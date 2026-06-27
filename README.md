@@ -21,17 +21,16 @@
 ---
 
 ## 🖼️ اسکرین‌شات‌ها
+<img width="1280" height="673" alt="1" src="https://github.com/user-attachments/assets/8cc29082-07b9-4651-b85d-4cea17b1d4a9" />
+<img width="1280" height="676" alt="2" src="https://github.com/user-attachments/assets/98bf552d-399b-4dc2-b707-e91ab14db1d7" />
+<img width="1280" height="675" alt="3" src="https://github.com/user-attachments/assets/7197ad5c-851e-42f4-85f4-30f306c6b17c" />
 
-<img width="1280" height="675" alt="1" src="https://github.com/user-attachments/assets/4853212f-1232-490c-bfa6-cd639f5532e8" />
-<img width="1280" height="674" alt="2" src="https://github.com/user-attachments/assets/8b318af5-1769-4b0c-8e76-71857b47292b" />
-<img width="1280" height="677" alt="3" src="https://github.com/user-attachments/assets/d05a1b20-8d35-4dc8-943a-723650ea0793" />
-<img width="1280" height="674" alt="4" src="https://github.com/user-attachments/assets/64847bc3-2210-4ef9-abac-b3702280779b" />
 
 ---
 
 ## 📥 دانلود مستقیم
 
-[📦 **دانلود ZIP نسخه 1.5**](https://github.com/user-attachments/files/29406882/kq-panel.zip)
+[📦 **دانلود ZIP نسخه 1.5**](https://github.com/user-attachments/files/29411716/kq-panel.zip)
 
 ---
 
